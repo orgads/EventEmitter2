@@ -1,58 +1,44 @@
-var simpleEvents = require('nodeunit').testCase;
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
+import { describe, it, expect } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-if(typeof require !== 'undefined') {
-  EventEmitter2 = require(file).EventEmitter2;
-}
-else {
-  EventEmitter2 = window.EventEmitter2;
-}
 
-module.exports = simpleEvents({
+describe('prepend Tests', () => {
+  it('1. Add a listener before another one on a single event.', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-  '1. Add a listener before another one on a single event.': function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
-
-    var raised = false;
-    var second = function () {
-      test.ok(raised, 'The event was raised in incorrect order');
-      test.done();
+    let raised = false;
+    const second = function () {
+      expect(raised).toBeTruthy();
     };
     emitter.on('test1', second);
 
-    var first = function () {
-      test.ok(!raised, 'The event was raised in incorrect order');
+    const first = function () {
+      expect(raised).toBeFalsy();
       raised = true;
     };
     emitter.prependListener('test1', first);
 
-    test.equal(emitter.listeners('test1').length, 2);
-    test.equal(emitter.listeners('test1')[0], first);
-    test.equal(emitter.listeners('test1')[1], second);
+    expect(emitter.listeners('test1').length).toBe(2);
+    expect(emitter.listeners('test1')[0]).toBe(first);
+    expect(emitter.listeners('test1')[1]).toBe(second);
     emitter.emit('test1');
+  });
 
+  it('2. prepend listener for any event', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-  },
-  '2. prepend listener for any event' : function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
-
-    var raised = false;
-    var second = function () {
-      test.ok(raised, 'The event was raised in incorrect order');
-      test.done();
+    let raised = false;
+    const second = function () {
+      expect(raised).toBeTruthy();
     };
     emitter.onAny(second);
 
-    var first = function () {
-      test.ok(!raised, 'The event was raised in incorrect order');
+    const first = function () {
+      expect(raised).toBeFalsy();
       raised = true;
     };
     emitter.prependAny(first);
 
     emitter.emit('random');
-  
-  }
+  });
 });

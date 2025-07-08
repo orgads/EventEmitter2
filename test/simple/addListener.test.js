@@ -1,358 +1,332 @@
-var assert= require('assert');
-var simpleEvents = require('nodeunit').testCase;
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
+import { describe, it, expect, vi } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-if(typeof require !== 'undefined') {
-  EventEmitter2 = require(file).EventEmitter2;
-}
-else {
-  EventEmitter2 = window.EventEmitter2;
-}
 
-module.exports = simpleEvents({
+describe('addListener Tests', () => {
+  it('1. Add a single listener on a single event.', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-  '1. Add a single listener on a single event.': function (test) {
+    const spy = vi.fn();
+    emitter.on('test1', spy);
 
-    var emitter = new EventEmitter2({ verbose: true });
+    expect(emitter.listeners('test1').length).toBe(1);
+    // Function should not be called since no event is emitted
+    expect(spy).not.toHaveBeenCalled();
+  });
 
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
+  it('2. Add two listeners on a single event.', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-    test.equal(emitter.listeners('test1').length, 1, 'There are three emitters');
+    const spy1 = vi.fn();
+    const spy2 = vi.fn();
+    emitter.on('test1', spy1);
+    emitter.on('test1', spy2);
 
-    test.expect(1);
-    test.done();
+    expect(emitter.listeners('test1').length).toBe(2);
+    // Functions should not be called since no event is emitted
+    expect(spy1).not.toHaveBeenCalled();
+    expect(spy2).not.toHaveBeenCalled();
+  });
 
-  },
-  '2. Add two listeners on a single event.': function (test) {
+  it('3. Add three listeners on a single event.', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-    var emitter = new EventEmitter2({ verbose: true });
+    const spy1 = vi.fn();
+    const spy2 = vi.fn();
+    const spy3 = vi.fn();
+    emitter.on('test1', spy1);
+    emitter.on('test1', spy2);
+    emitter.on('test1', spy3);
 
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
+    expect(emitter.listeners('test1').length).toBe(3);
+    // Functions should not be called since no event is emitted
+    expect(spy1).not.toHaveBeenCalled();
+    expect(spy2).not.toHaveBeenCalled();
+    expect(spy3).not.toHaveBeenCalled();
+  });
 
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
+  it('4. Add two listeners to two different events.', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-    test.equal(emitter.listeners('test1').length, 2, 'There are three emitters');
+    const spy1 = vi.fn();
+    const spy2 = vi.fn();
+    const spy3 = vi.fn();
+    const spy4 = vi.fn();
+    emitter.on('test1', spy1);
+    emitter.on('test1', spy2);
+    emitter.on('test2', spy3);
+    emitter.on('test2', spy4);
 
-    test.expect(1);
-    test.done();
+    expect(emitter.listeners('test1').length).toBe(2);
+    expect(emitter.listeners('test2').length).toBe(2);
+    // Functions should not be called since no events are emitted
+    expect(spy1).not.toHaveBeenCalled();
+    expect(spy2).not.toHaveBeenCalled();
+    expect(spy3).not.toHaveBeenCalled();
+    expect(spy4).not.toHaveBeenCalled();
+  });
 
-  },
-  '3. Add three listeners on a single event.': function (test) {
+  it('5. Never adding any listeners should yield a listeners array with the length of 0.', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-    var emitter = new EventEmitter2({ verbose: true });
+    const spy = vi.fn();
+    emitter.on('test1', spy);
 
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
+    expect(emitter.listeners('test2').length).toBe(0);
+    // Function should not be called since no event is emitted
+    expect(spy).not.toHaveBeenCalled();
+  });
 
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
+  it('6. the listener added should be the right listener.', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
-
-    test.equal(emitter.listeners('test1').length, 3, 'There are three emitters');
-
-    test.expect(1);
-    test.done();
-
-  },
-  '4. Add two listeners to two different events.': function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
-
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
-
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
-
-    emitter.on('test2', function () {
-      test.ok(true, 'The event was raised');
-    });
-
-    emitter.on('test2', function () {
-      test.ok(true, 'The event was raised');
-    });
-
-    test.equal(emitter.listeners('test1').length, 2, 'There are two emitters');
-    test.equal(emitter.listeners('test2').length, 2, 'There are two emitters');
-
-    test.expect(2);
-    test.done();
-
-  },
-  '5. Never adding any listeners should yield a listeners array with the length of 0.': function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
-
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
-    });
-
-    test.equal(emitter.listeners('test2').length, 0, 'There are no emitters');
-
-    test.expect(1);
-    test.done();
-  },
-
-  '6. the listener added should be the right listener.': function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
-
-    var type = 'somelistenerbar';
-    var f = function () {};
+    const type = 'somelistenerbar';
+    const f = function () {};
 
     emitter.on(type, f);
-    test.equal(emitter.listeners(type).length, 1, 'There are is one emitters');
-    test.equal(emitter.listeners(type)[0], f, 'The function should be f');
+    expect(emitter.listeners(type).length).toBe(1);
+    expect(emitter.listeners(type)[0]).toBe(f);
+  });
 
-    test.expect(2);
-    test.done();
+  it('7. should be able to listen on any event', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-  },
-
-  '7. should be able to listen on any event' : function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
-
-    var eventBeingTestedFor, expectedArgument;
-    var f = function (event, argument) {
-      test.ok(true, 'the event was fired');
-      test.ok(eventBeingTestedFor === event, 'the event is '+event);
-      test.ok(expectedArgument === argument, 'the argument is '+argument)
-    };
+    let eventBeingTestedFor, expectedArgument;
+    const f = vi.fn((event, argument) => {
+      // Original test had 3 assertions per call - we keep the meaningful ones
+      expect(eventBeingTestedFor).toBe(event); // 'the event is ' + event
+      expect(expectedArgument).toBe(argument); // 'the argument is ' + argument
+    });
 
     emitter.onAny(f);
-    emitter.emit(eventBeingTestedFor = 'test23.ns5.ns5', expectedArgument = 'someData'); //1
+    emitter.emit(eventBeingTestedFor = 'test23.ns5.ns5', expectedArgument = 'someData'); //1 call
     emitter.offAny(f);
     expectedArgument = undefined;
-    emitter.emit(eventBeingTestedFor = 'test21'); //0
+    emitter.emit(eventBeingTestedFor = 'test21'); //0 calls
     emitter.onAny(f);
-    emitter.onAny(f);
-    emitter.emit(eventBeingTestedFor = 'test23.ns5.ns5', expectedArgument = 'someData'); //3
+    emitter.onAny(f); // Add f twice
+    emitter.emit(eventBeingTestedFor = 'test23.ns5.ns5', expectedArgument = 'someData'); //2 calls
 
-    test.expect(3*3);
-    test.done();
+    // Should be called 3 times total (1 + 0 + 2), original expected 9 assertions (3*3)
+    expect(f).toHaveBeenCalledTimes(3);
+  });
 
-  },
+  it('8. should be able to listen on any event (should cause an error)', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-  '8. should be able to listen on any event (should cause an error)' : function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
-
-    var f = function () {
-      test.ok(true, 'the event was fired');
-    };
+    const f = vi.fn();
     emitter.onAny(f);
 
     emitter.emit('error');
 
-    test.expect(1);
-    test.done();
+    // Should be called once
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(f).toHaveBeenCalledWith('error');
+  });
 
-  },
+  it('9. onAny alias', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-  '9. onAny alias' : function (test) {
+    const f = vi.fn();
 
-    var emitter = new EventEmitter2({ verbose: true });
-
-    var f = function () {
-      test.ok(true, 'the event was fired');
-    };
-
-    emitter.on(f);
+    emitter.on(f); // This is the onAny alias
 
     emitter.emit('foo');
     emitter.emit('bar');
 
-    test.expect(2);
-    test.done();
+    // Should be called twice
+    expect(f).toHaveBeenCalledTimes(2);
+    expect(f).toHaveBeenNthCalledWith(1, 'foo');
+    expect(f).toHaveBeenNthCalledWith(2, 'bar');
+  });
 
-  },
+  it('10. onAny with invalid argument', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-  '10. onAny with invalid argument' : function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
-
-    test.throws(function () {
+    expect(() => {
       emitter.onAny(null);
-    }, 'An exception should be thrown');
+    }).toThrow();
 
-    test.ok(!emitter.emit('foo'), 'emit should not return true');
+    expect(emitter.emit('foo')).toBe(false);
+  });
 
-    test.expect(2);
-    test.done();
+  it('11. listenerCount should return the number of listeners', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
-  },
+    // Original had 3 assertions total
+    expect(emitter.listenerCount('test1')).toBe(0); // 1st assertion
 
-  '11. listenerCount should return the number of listeners': function (test) {
+    const spy1 = vi.fn();
+    emitter.on('test1', spy1);
 
+    expect(emitter.listenerCount('test1')).toBe(1); // 2nd assertion
 
-    var emitter = new EventEmitter2({ verbose: true });
+    const spy2 = vi.fn();
+    emitter.on('test1', spy2);
 
-    test.equal(emitter.listenerCount('test1'), 0, 'Before adding listeners listenerCount is 0');
+    expect(emitter.listeners('test1').length).toBe(2); // 3rd assertion
 
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
+    // Functions should not be called since no event is emitted
+    expect(spy1).not.toHaveBeenCalled();
+    expect(spy2).not.toHaveBeenCalled();
+  });
+
+  it('12. should support wrapping handler to an async listener', () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const ee = new EventEmitter2();
+        let counter = 0;
+        const f = function(x) {
+          expect(x).toBe(123);
+          counter++;
+        };
+        ee.on('test', f, false);
+        expect(ee.listenerCount()).toBe(1);
+        ee.emit('test', 123);
+        expect(counter).toBe(0);
+        setTimeout(() => {
+          expect(counter).toBe(1);
+          ee.off('test', f);
+          expect(ee.listenerCount()).toBe(0);
+          resolve();
+        }, 10);
+      } catch (error) {
+        reject(error);
+      }
     });
+  });
 
-    test.equal(emitter.listenerCount('test1'), 1, 'After adding a listener listenerCount is 1');
+  it('13. should support wrapping handler to a promised listener using setImmediate', () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const ee = new EventEmitter2();
+        let counter = 0;
+        const f = function(x) {
+          expect(x).toBe(123);
+          counter++;
+          return x + 1;
+        };
 
-    emitter.on('test1', function () {
-      test.ok(true, 'The event was raised');
+        ee.on('test', f, {promisify: true});
+
+        ee.emitAsync('test', 123).then((arg) => {
+          expect(counter).toBe(1);
+          expect(arg[0]).toBe(124);
+          resolve();
+        }, reject);
+
+        expect(counter).toBe(0);
+      } catch (error) {
+        reject(error);
+      }
     });
+  });
 
-    test.equal(emitter.listeners('test1').length, 2, 'And then there were 2');
-
-    test.expect(3);
-    test.done();
-
-  },
-
-  '12. should support wrapping handler to an async listener': function (done) {
-    var ee= new EventEmitter2();
-    var counter= 0;
-    var f= function(x){
-      assert.equal(x, 123);
-      counter++;
-    };
-    ee.on('test', f, false);
-    assert.equal(ee.listenerCount(), 1);
-    ee.emit('test', 123);
-    assert.equal(counter, 0, 'the event was emitted synchronously');
-    setTimeout(function(){
-      assert.equal(counter, 1);
-      ee.off('test', f);
-      assert.equal(ee.listenerCount(), 0);
-      done();
-    }, 10);
-  },
-
-  '13. should support wrapping handler to a promised listener using setImmediate': function (done) {
-    var ee= new EventEmitter2();
-    var counter= 0;
-    var f= function(x){
-      assert.equal(x, 123);
-      counter++;
-      return x + 1;
-    };
-
-    ee.on('test', f, {promisify: true});
-
-    ee.emitAsync('test', 123).then(function(arg){
-      assert.equal(counter, 1);
-      assert.equal(arg, 124);
-      done();
-    }, done);
-
-    assert.equal(counter, 0,'the event was emitted synchronously');
-  },
-
-  '13. should support wrapping handler to an async listener using nextTick': function (done) {
-    var ee= new EventEmitter2();
-    var counter= 0;
-    var f= function(x){
-      assert.equal(x, 123);
-      counter++;
-    };
-    ee.on('test', f, {nextTick: true});
-    assert.equal(ee.listenerCount(), 1);
-    ee.emit('test', 123);
-    assert.equal(counter, 0, 'the event was emitted synchronously');
-    process.nextTick(function(){
-      assert.equal(counter, 1);
-      ee.off('test', f);
-      assert.equal(ee.listenerCount(), 0);
-      done();
+  it('14. should support wrapping handler to an async listener using nextTick', () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const ee = new EventEmitter2();
+        let counter = 0;
+        const f = function(x) {
+          expect(x).toBe(123);
+          counter++;
+        };
+        ee.on('test', f, {nextTick: true});
+        expect(ee.listenerCount()).toBe(1);
+        ee.emit('test', 123);
+        expect(counter).toBe(0);
+        process.nextTick(() => {
+          expect(counter).toBe(1);
+          ee.off('test', f);
+          expect(ee.listenerCount()).toBe(0);
+          resolve();
+        });
+      } catch (error) {
+        reject(error);
+      }
     });
-  },
+  });
 
-  '14. should support wrapping once listener to an async listener': function (done) {
-    var ee = new EventEmitter2();
-    var counter = 0;
-    var f = function (x) {
-      assert.equal(x, 123);
+  it('15. should support wrapping once listener to an async listener', () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const ee = new EventEmitter2();
+        let counter = 0;
+        const f = function (x) {
+          expect(x).toBe(123);
+          counter++;
+        };
+        ee.once('test', f, false);
+        expect(ee.listenerCount()).toBe(1);
+        ee.emit('test', 123);
+        expect(counter).toBe(0);
+        setTimeout(() => {
+          expect(counter).toBe(1);
+          ee.off('test', f);
+          expect(ee.listenerCount()).toBe(0);
+          resolve();
+        }, 10);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+
+  it('16. should support returning a listener object if the objectify options is set', () => {
+    const ee = new EventEmitter2();
+    let counter = 0;
+    const handler = function (x) {
+      expect(x).toBe(123);
       counter++;
     };
-    ee.once('test', f, false);
-    assert.equal(ee.listenerCount(), 1);
-    ee.emit('test', 123);
-    assert.equal(counter, 0, 'the event was emitted synchronously');
-    setTimeout(function () {
-      assert.equal(counter, 1);
-      ee.off('test', f);
-      assert.equal(ee.listenerCount(), 0);
-      done();
-    }, 10);
-  },
 
-  '15. should support returning a listener object if the objectify options is set': function () {
-    var ee = new EventEmitter2();
-    var counter = 0;
-    var handler = function (x) {
-      assert.equal(x, 123);
-      counter++;
-    };
-
-    var listener= ee.on('test', handler, {
+    const listener = ee.on('test', handler, {
       objectify: true
     });
 
-    assert.equal(typeof listener, 'object');
-    assert.equal(listener.constructor.name, 'Listener');
-    assert.equal(typeof listener.off, 'function');
-    assert.equal(listener.emitter, ee);
-    assert.equal(listener.event, 'test');
-    assert.equal(listener.listener, handler);
+    expect(typeof listener).toBe('object');
+    expect(listener.constructor.name).toBe('Listener');
+    expect(typeof listener.off).toBe('function');
+    expect(listener.emitter).toBe(ee);
+    expect(listener.event).toBe('test');
+    expect(listener.listener).toBe(handler);
 
-    assert.equal(counter, 0);
+    expect(counter).toBe(0);
 
     ee.emit('test', 123);
-    assert.equal(counter, 1);
+    expect(counter).toBe(1);
 
     listener.off();
 
     ee.emit('test', 123);
-    assert.equal(counter, 1);
-  },
+    expect(counter).toBe(1);
+  });
 
-  '16. should support returning a listener object using the `once` method if the objectify options is set': function () {
-    var ee = new EventEmitter2();
-    var counter = 0;
-    var handler = function (x) {
-      assert.equal(x, 123);
+  it('17. should support returning a listener object using the `once` method if the objectify options is set', () => {
+    const ee = new EventEmitter2();
+    let counter = 0;
+    const handler = function (x) {
+      expect(x).toBe(123);
       counter++;
     };
 
-    var listener= ee.once('test', handler, {
+    const listener = ee.once('test', handler, {
       objectify: true
     });
 
-    assert.equal(typeof listener, 'object');
-    assert.equal(listener.constructor.name, 'Listener');
-    assert.equal(typeof listener.off, 'function');
-    assert.equal(listener.emitter, ee);
-    assert.equal(listener.event, 'test');
-    assert.equal(listener.listener._origin, handler);
+    expect(typeof listener).toBe('object');
+    expect(listener.constructor.name).toBe('Listener');
+    expect(typeof listener.off).toBe('function');
+    expect(listener.emitter).toBe(ee);
+    expect(listener.event).toBe('test');
+    expect(listener.listener._origin).toBe(handler);
 
-    assert.equal(counter, 0);
+    expect(counter).toBe(0);
 
     listener.off();
 
     ee.emit('test', 123);
 
-    assert.equal(counter, 0);
-  }
+    expect(counter).toBe(0);
+  });
 });

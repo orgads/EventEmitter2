@@ -1,49 +1,36 @@
-var simpleEvents = require('nodeunit').testCase;
-var file = '../../lib/eventemitter2';
+import { describe, it, expect, vi } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-var EventEmitter2;
 
-if(typeof require !== 'undefined') {
-  EventEmitter2 = require(file).EventEmitter2;
-}
-else {
-  EventEmitter2 = window.EventEmitter2;
-}
-
-module.exports = simpleEvents({
-
-  '1. A listener added with `once` should only listen once and then be removed.': function (test) {
-
-    var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+describe('ttl Tests', () => {
+  it('1. A listener added with `once` should only listen once and then be removed.', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var type = 'test1.foo.bar';
+    const type = 'test1.foo.bar';
+    const spy = vi.fn();
 
-    emitter.once(type, function () {
-      test.ok(true, 'The event was raised once');
-    });
+    emitter.once(type, spy);
 
     emitter.emit(type);
     emitter.emit(type);
 
-    test.expect(1);
-    test.done();
+    // Should only be called once
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 
-  },
-  '2. A listener with a TTL of 4 should only listen 4 times.': function (test) {
-
-    var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+  it('2. A listener with a TTL of 4 should only listen 4 times.', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var type = 'test1.foo.bar';
+    const type = 'test1.foo.bar';
+    const spy = vi.fn();
 
-    emitter.many(type, 4, function (value1) {
-      test.ok(true, 'The event was raised 4 times.');
-    });
+    emitter.many(type, 4, spy);
 
     emitter.emit(type, 1);
     emitter.emit(type, 2);
@@ -51,24 +38,24 @@ module.exports = simpleEvents({
     emitter.emit(type, 4);
     emitter.emit(type, 5);
 
-    test.expect(4);
-    test.done();
+    // Should be called exactly 4 times
+    expect(spy).toHaveBeenCalledTimes(4);
+  });
 
-  },
-  '3. A listener with a TTL of 4 should only listen 4 times and pass parameters.': function (test) {
-
-    var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+  it('3. A listener with a TTL of 4 should only listen 4 times and pass parameters.', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var type = 'test1.foo.bar';
-
-    emitter.many(type, 4, function (value1, value2, value3) {
-      test.ok(typeof value1 !== 'undefined', 'got value 1');
-      test.ok(typeof value2 !== 'undefined', 'got value 2');
-      test.ok(typeof value3 !== 'undefined', 'got value 3');
+    const type = 'test1.foo.bar';
+    const spy = vi.fn((value1, value2, value3) => {
+      expect(typeof value1 !== 'undefined').toBe(true);
+      expect(typeof value2 !== 'undefined').toBe(true);
+      expect(typeof value3 !== 'undefined').toBe(true);
     });
+
+    emitter.many(type, 4, spy);
 
     emitter.emit(type, 1, 'A', false);
     emitter.emit(type, 2, 'A', false);
@@ -76,148 +63,141 @@ module.exports = simpleEvents({
     emitter.emit(type, 4, 'A', false);
     emitter.emit(type, 5, 'A', false);
 
-    test.done();
+    // Should be called exactly 4 times with correct parameters
+    expect(spy).toHaveBeenCalledTimes(4);
+    expect(spy).toHaveBeenNthCalledWith(1, 1, 'A', false);
+    expect(spy).toHaveBeenNthCalledWith(2, 2, 'A', false);
+    expect(spy).toHaveBeenNthCalledWith(3, 3, 'A', false);
+    expect(spy).toHaveBeenNthCalledWith(4, 4, 'A', false);
+  });
 
-  },
-  '4. Remove an event listener by signature.': function (test) {
-
-    var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+  it('4. Remove an event listener by signature.', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var type = 'test1.foo.bar';
-    var count = 0;
-
-    function f1(event) {
-      "event A";
-      test.ok(true, 'The event was raised less than 3 times.');
-    }
+    const type = 'test1.foo.bar';
+    const f1 = vi.fn();
+    const f2 = vi.fn();
+    const f3 = vi.fn();
 
     emitter.on(type, f1);
-
-    function f2(event) {
-      "event B";
-      test.ok(true, 'The event was raised less than 3 times.');
-    }
-
     emitter.on(type, f2);
-
-    function f3(event) {
-      "event C";
-      test.ok(true, 'The event was raised less than 3 times.');
-    }
-
     emitter.on(type, f3);
 
     emitter.removeListener(type, f2);
 
     emitter.emit(type);
 
-    test.expect(2);
-    test.done();
+    // f1 and f3 should be called, but not f2
+    expect(f1).toHaveBeenCalledTimes(1);
+    expect(f2).toHaveBeenCalledTimes(0);
+    expect(f3).toHaveBeenCalledTimes(1);
+  });
 
-  },
-  '5. `removeListener` and `once`': function(test) {
-
-     var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+  it('5. `removeListener` and `once`', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var type = 'test1.foo.bar';
-    var functionA = function() { test.ok(true, 'Event was fired'); };
+    const type = 'test1.foo.bar';
+    const spy = vi.fn();
 
-    emitter.once(type, functionA);
-    emitter.removeListener(type, functionA);
+    emitter.once(type, spy);
+    emitter.removeListener(type, spy);
 
     emitter.emit(type);
 
-    test.expect(0);
-    test.done();
-  },
+    // Should not be called since listener was removed
+    expect(spy).toHaveBeenCalledTimes(0);
+  });
 
-  '6. Listening with a wildcard on once' : function (test) {
-
-    var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+  it('6. Listening with a wildcard on once', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var type = 'test1.foo.*';
-    var functionA = function() { test.ok(true, 'Event was fired'); };
+    const type = 'test1.foo.*';
+    const spy = vi.fn();
 
-    emitter.once(type, functionA);
-    emitter.on(type,functionA);
+    emitter.once(type, spy);
+    emitter.on(type, spy);
 
     emitter.emit(type); //2
     emitter.emit(type); //1
 
-    test.expect(3);
-    test.done();
-  },
+    // Should be called 3 times total (once: 1 time, on: 2 times)
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
 
-  '7. Emitting with a wildcard targeted at once' : function (test) {
-
-    var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+  it('7. Emitting with a wildcard targeted at once', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var type = 'test1.foo.bar';
-    var type2 = 'test1.foo.*';
-    var functionA = function() { test.ok(true, 'Event was fired'); };
+    const type = 'test1.foo.bar';
+    const type2 = 'test1.foo.*';
+    const spy = vi.fn();
 
-    emitter.once(type, functionA);
+    emitter.once(type, spy);
     emitter.emit(type2);
     emitter.emit(type2);
 
-    test.expect(1);
-    test.done();
-  },
+    // Should be called only 1 time (once listener triggered by first wildcard emit)
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 
-  '8. Emitting with a multi-level wildcard on once': function(test) {
-
-    var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+  it('8. Emitting with a multi-level wildcard on once', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var i = 0;
-    var type = 'test1.**';
-    var functionA = function(n) {
+    let i = 0;
+    const type = 'test1.**';
+    const onceSpy = vi.fn();
+    const onSpy = vi.fn();
+
+    const functionA = function(n) {
       return function() {
         console.log(n, this.event);
-        test.ok(true, 'Event was fired');
+        if (n === 0) {
+          onceSpy();
+        } else {
+          onSpy();
+        }
       };
-    }
+    };
 
     emitter.once(type, functionA(i++));
     emitter.on(type, functionA(i++));
     emitter.emit(type); //2
     emitter.emit(type); //1
 
-    test.expect(3);
-    test.done();
-  },
+    // Should be called 3 times total (once: 1 time, on: 2 times)
+    expect(onceSpy).toHaveBeenCalledTimes(1);
+    expect(onSpy).toHaveBeenCalledTimes(2);
+  });
 
-  '9. Emitting with a multi-level wildcard targeted at once' : function (test) {
-
-    var emitter = new EventEmitter2({
-      wildcard : true,
-      verbose : true
+  it('9. Emitting with a multi-level wildcard targeted at once', () => {
+    const emitter = new EventEmitter2({
+      wildcard: true,
+      verbose: true
     });
 
-    var type = 'test1.foo.bar';
-    var type2 = 'test1.**';
-    var functionA = function() { test.ok(true, 'Event was fired'); };
+    const type = 'test1.foo.bar';
+    const type2 = 'test1.**';
+    const spy = vi.fn();
 
-    emitter.once(type, functionA);
+    emitter.once(type, spy);
     emitter.emit(type2);
     emitter.emit(type2);
 
-    test.expect(1);
-    test.done();
-  }
-
+    // Should be called only 1 time (once listener triggered by first wildcard emit)
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 });

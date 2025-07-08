@@ -1,216 +1,183 @@
+import { describe, it, expect, vi } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-var simpleEvents= require('nodeunit').testCase;
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
-
-if(typeof require !== 'undefined') {
-  EventEmitter2 = require(file).EventEmitter2;
-}
-else {
-  EventEmitter2 = window.EventEmitter2;
-}
-
-const setupRemoveListenerTest = (times) => {
-  const emitter = new EventEmitter2;
+function setupRemoveListenerTest(count) {
+  const emitter = new EventEmitter2();
   const type = 'remove';
-  const f = registerRemoveListeners(emitter, type, times);
-
-  return {emitter, type, f};
+  const f = vi.fn();
+  for (let i = 0; i < count; i++) {
+    emitter.on(type, f);
+  }
+  return { emitter, type, f };
 }
 
-const registerRemoveListeners = (emitter, type, times) => {
-  const f = function f() {
-    test.ok(true, 'event was raised');
-  };
 
-  for (let i = 0; i < times; i++) {
-    emitter.on(type, f)
-  }
-
-  return f;
-};
-
-module.exports = simpleEvents({
-
-  'removeListener1. adding 1, removing 1' : function (test) {
-
+describe('removeListener Tests', () => {
+  it('removeListener1. adding 1, removing 1', () => {
     const {emitter, type, f} = setupRemoveListenerTest(1);
     let listeners;
-    
+
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 1, 'should only have 1');
+    expect(listeners.length).toBe(1);
 
     //remove
     emitter.removeListener(type, f);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 0, 'should be 0');
+    expect(listeners.length).toBe(0);
 
-    test.expect(2);
-    test.done();
-  },
+    // Function should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+  });
 
-  'removeListener2. adding 2, removing 1' : function (test) {
-
+  it('removeListener2. adding 2, removing 1', () => {
     const {emitter, type, f} = setupRemoveListenerTest(2);
     let listeners;
 
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 2, 'should only have 2');
+    expect(listeners.length).toBe(2);
 
     //remove
     emitter.removeListener(type, f);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 1, 'should be 1');
+    expect(listeners.length).toBe(1);
 
-    test.expect(2);
-    test.done();
-  },
+    // Function should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+  });
 
-  'removeListener3. adding 3, removing 1' : function (test) {
-
+  it('removeListener3. adding 3, removing 1', () => {
     const {emitter, type, f} = setupRemoveListenerTest(3);
     let listeners;
 
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 3, 'should only have 3');
+    expect(listeners.length).toBe(3);
 
     //remove
     emitter.removeListener(type, f);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 2, 'should be 2');
+    expect(listeners.length).toBe(2);
 
-    test.expect(2);
-    test.done();
-  },
+    // Function should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+  });
 
-  'removeListener4. should error if we don\'t pass in a function' : function (test) {
-
+  it('removeListener4. should error if we don\'t pass in a function', () => {
     const {emitter, type, f} = setupRemoveListenerTest(1);
     let listeners;
 
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 1, 'should only have 1');
+    expect(listeners.length).toBe(1);
 
     //remove
-    test.throws(function () {emitter.removeListener(type, type)}, Error, 'should throw an Error');
+    expect(() => {
+      emitter.removeListener(type, type);
+    }).toThrow(Error);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 1, 'should be 1');
+    expect(listeners.length).toBe(1);
 
-    test.expect(3);
-    test.done();
-  },
+    // Function should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+  });
 
-  'removeListener5. removing a different function, should not remove' : function (test) {
+  it('removeListener5. removing a different function, should not remove', () => {
+    const emitter = new EventEmitter2();
+    const type = 'remove';
+    let listeners;
 
-    var emitter = new EventEmitter2;
-    var type = 'remove',
-        listeners;
-
-    var f = function f() {
-      test.ok(true, 'event was raised');
-    };
-    var g = function g() {
-      test.ok(true, 'event was raised');
-    };
+    const f = vi.fn();
+    const g = vi.fn();
 
     emitter.on(type, f);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 1, 'should only have 1');
+    expect(listeners.length).toBe(1);
 
     //remove
     emitter.removeListener(type, g);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 1, 'should be 1');
+    expect(listeners.length).toBe(1);
 
-    test.expect(2);
-    test.done();
-  },
+    // Functions should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+    expect(g).not.toHaveBeenCalled();
+  });
 
-  'removeListener6. removing all functions by name' : function (test) {
-
+  it('removeListener6. removing all functions by name', () => {
     const {emitter, type, f} = setupRemoveListenerTest(10);
     let listeners;
 
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 10, 'should only have 10');
+    expect(listeners.length).toBe(10);
 
     emitter.removeListener(type, f);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 9, 'should be 9');
+    expect(listeners.length).toBe(9);
     emitter.removeAllListeners(type);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 0, 'should be 0');
+    expect(listeners.length).toBe(0);
 
-    test.expect(3);
-    test.done();
-  },
+    // Function should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+  });
 
-  'removeListener7. removing different event, should not remove' : function (test) {
-
+  it('removeListener7. removing different event, should not remove', () => {
     const {emitter, type, f} = setupRemoveListenerTest(10);
     let listeners;
 
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 10, 'should only have 10');
+    expect(listeners.length).toBe(10);
 
-    emitter.removeListener(type+type, f);
+    emitter.removeListener(type + type, f);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 10, 'should be 10');
+    expect(listeners.length).toBe(10);
 
-    emitter.removeAllListeners(type+type);
+    emitter.removeAllListeners(type + type);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 10, 'should be 10');
+    expect(listeners.length).toBe(10);
 
     emitter.removeAllListeners(type);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 0, 'should be 0');
+    expect(listeners.length).toBe(0);
 
-    test.expect(4);
-    test.done();
-  },
+    // Function should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+  });
 
-  'removeListener8. when _events doesn\'t exist' : function (test) {
-
-    var emitter = new EventEmitter2;
-    var type = 'remove';
+  it('removeListener8. when _events doesn\'t exist', () => {
+    const emitter = new EventEmitter2();
+    const type = 'remove';
 
     delete emitter._events;
     emitter.removeAllListeners();
     emitter.removeAllListeners(type);
+  });
 
-    test.expect(0);
-    test.done();
-  },
-
-  'removeListener9. removing all functions - no argument provided' : function(test) {
-
+  it('removeListener9. removing all functions - no argument provided', () => {
     const {emitter, type, f} = setupRemoveListenerTest(10);
     let listeners;
 
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 10, 'should only have 10');
+    expect(listeners.length).toBe(10);
 
     emitter.removeAllListeners();
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 0, 'should be 0');
+    expect(listeners.length).toBe(0);
 
-    test.expect(2);
-    test.done();
-  },
+    // Function should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+  });
 
-  'removeListener10. removing all functions - argument provided is "undefined"' : function(test) {
-
+  it('removeListener10. removing all functions - argument provided is "undefined"', () => {
     const {emitter, type, f} = setupRemoveListenerTest(10);
     let listeners;
 
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 10, 'should only have 10');
+    expect(listeners.length).toBe(10);
 
     emitter.removeAllListeners(undefined);
     listeners = emitter.listeners(type);
-    test.equal(listeners.length, 0, 'should be 0');
+    expect(listeners.length).toBe(0);
 
-    test.expect(2);
-    test.done();
-  }
+    // Function should not be called since no event is emitted
+    expect(f).not.toHaveBeenCalled();
+  });
 });

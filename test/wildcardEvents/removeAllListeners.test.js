@@ -1,34 +1,26 @@
-var assert= require('assert');
+import { describe, it, expect } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
 
-if(typeof require !== 'undefined') {
-    EventEmitter2 = require(file).EventEmitter2;
-}
-else {
-    EventEmitter2 = window.EventEmitter2;
-}
+describe('removeAllListeners Tests', () => {
+  it('should remove all wildcard events', () => {
+    let counter = 0;
 
-module.exports= {
-    'should remove all wildcard events': function(){
-        var counter=0;
+    const ee = new EventEmitter2({
+      wildcard: true
+    });
 
-        var ee= new EventEmitter2({
-            wildcard: true
-        });
+    ee.on('test.*', () => {
+      counter++;
+    });
 
-        ee.on('test.*', function(){
-            counter++;
-        });
+    expect(ee.listenerCount('test.*')).toBe(1);
 
-        assert.equal(ee.listenerCount('test.*'), 1);
+    ee.emit('test.foo');
 
-        ee.emit('test.foo');
+    expect(counter).toBe(1);
+    ee.removeAllListeners();
 
-        assert.equal(counter, 1);
-        ee.removeAllListeners();
-
-        assert.equal(ee.listenerCount('test.*'), 0);
-    }
-};
+    expect(ee.listenerCount('test.*')).toBe(0);
+  });
+});

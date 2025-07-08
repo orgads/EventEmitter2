@@ -1,89 +1,77 @@
-var assert= require('assert');
+import { describe, it, expect } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
 
-if(typeof require !== 'undefined') {
-    EventEmitter2 = require(file).EventEmitter2;
-}
-else {
-    EventEmitter2 = window.EventEmitter2;
-}
+describe('normalizeEvent Tests', () => {
+  it('should normalize event name when emitting an event', () => {
+    const ee = new EventEmitter2({
+      wildcard: true
+    });
 
-module.exports= {
-    'should normalize event name when emitting an event': function(){
-        var ee= new EventEmitter2({
-            wildcard: true
-        });
+    let counter = 0;
 
-        var counter= 0;
+    ee.on('**', function() {
+      expect(typeof this.event === 'string').toBe(true);
+      expect(this.event).toBe('event.test');
+      counter++;
+    });
 
-        ee.on('**', function(){
-            assert.ok(typeof this.event==='string');
-            assert.equal(this.event, 'event.test');
-            counter++;
-        });
+    ee.emit('event.test');
+    ee.emit(['event', 'test']);
+    expect(counter).toBe(2, 'event not fired');
+  });
 
-        ee.emit('event.test');
-        ee.emit(['event', 'test']);
-        assert.equal(counter, 2, 'event not fired');
-    },
+  it('should normalize event name when emitting an event in async mode', async () => {
+    const ee = new EventEmitter2({
+      wildcard: true
+    });
 
-    'should normalize event name when emitting an event in async mode': function(){
-        var ee= new EventEmitter2({
-            wildcard: true
-        });
+    let counter = 0;
 
-        var counter= 0;
+    ee.on('**', function() {
+      expect(typeof this.event === 'string').toBe(true);
+      expect(this.event).toBe('event.test');
+      counter++;
+    });
 
-        ee.on('**', function(){
-            assert.ok(typeof this.event==='string');
-            assert.equal(this.event, 'event.test');
-            counter++;
-        });
+    await Promise.all([
+      ee.emitAsync('event.test'),
+      ee.emitAsync(['event', 'test'])
+    ]);
+    expect(counter).toBe(2, 'event not fired');
+  });
 
-        return Promise.all([
-            ee.emitAsync('event.test'),
-            ee.emitAsync(['event', 'test'])
-        ]).then(function(){
-            assert.equal(counter, 2, 'event not fired');
-        });
-    },
+  it('should not convert ns to a string if ns is an array and contains a symbol', () => {
+    const ee = new EventEmitter2({
+      wildcard: true
+    });
+    const symbol = Symbol('test');
+    let counter = 0;
 
-    'should not convert ns to a string if ns is an array and contains a symbol': function(){
-        var ee= new EventEmitter2({
-            wildcard: true
-        });
-        var symbol= Symbol('test');
-        var counter= 0;
+    ee.on('**', function() {
+      expect(Array.isArray(this.event)).toBe(true);
+      expect(this.event).toEqual(['event', symbol]);
+      counter++;
+    });
 
-        ee.on('**', function(){
-            assert.ok(Array.isArray(this.event));
-            assert.deepEqual(this.event, ['event', symbol]);
-            counter++;
-        });
+    ee.emit(['event', symbol]);
+    expect(counter).toBe(1, 'event not fired');
+  });
 
-        ee.emit(['event', symbol]);
-        assert.equal(counter, 1, 'event not fired');
-    },
+  it('should not convert ns to a string if ns is an array and contains a symbol while emitting in async mode', () => {
+    const ee = new EventEmitter2({
+      wildcard: true
+    });
+    const symbol = Symbol('test');
+    let counter = 0;
 
-    'should not convert ns to a string if ns is an array and contains a symbol while emitting in async mode': function(){
-        var ee= new EventEmitter2({
-            wildcard: true
-        });
-        var symbol= Symbol('test');
-        var counter= 0;
+    ee.on('**', function() {
+      expect(Array.isArray(this.event)).toBe(true);
+      expect(this.event).toEqual(['event', symbol]);
+      counter++;
+    });
 
-        ee.on('**', function(){
-            assert.ok(Array.isArray(this.event));
-            assert.deepEqual(this.event, ['event', symbol]);
-            counter++;
-        });
-
-        return Promise.all([
-            ee.emit(['event', symbol])
-        ]).then(function(){
-            assert.equal(counter, 1, 'event not fired');
-        });
-    }
-};
+    ee.emit(['event', symbol]);
+    expect(counter).toBe(1, 'event not fired');
+  });
+});

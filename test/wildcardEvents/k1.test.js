@@ -1,56 +1,36 @@
 
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
+import { describe, it, expect } from 'vitest';
+import { EventEmitter2 } from '../../lib/eventemitter2.js';
 
-var common = require('../common');
-var assert = require('assert');
-var EventEmitter = require('../../lib/eventemitter2').EventEmitter2;
+describe('K1 Tests', () => {
+  it('should handle wildcard and multi-level wildcard events', () => {
+    const e = new EventEmitter2({ wildcard: true });
+    let countWildcard = 0;
+    let counMultiLevelWildcard = 0;
+    let countAny = 0;
 
-var e = new EventEmitter({wildcard: true});
-var countWildcard = 0;
-var counMultiLevelWildcard = 0;
-var countAny = 0;
+    e.on('foo', () => {
+      e.emit('bar', 'bar');
+    });
+    e.on('*', function(name) {
+      ++countWildcard;
+      console.log(this.event, name);
+      expect(this.event).toBe(name);
+    });
+    e.on('**', function(name) {
+      ++counMultiLevelWildcard;
+      console.log(this.event, name);
+      expect(this.event).toBe(name);
+    });
+    e.onAny(function(name) {
+      ++countAny;
+      expect(this.event).toBe(name);
+    });
 
-e.on('foo', function() {
-  e.emit('bar', 'bar');
-});
-e.on('*', function(name) {
-  ++countWildcard;
-  console.log(this.event, name);
-  assert.equal(this.event, name);
-});
-e.on('**', function(name) {
-  ++counMultiLevelWildcard;
-  console.log(this.event, name);
-  assert.equal(this.event, name);
-});
-e.onAny(function(name) {
-  ++countAny;
-  assert.equal(this.event, name);
-});
+    e.emit('foo', 'foo');
 
-e.emit('foo', 'foo');
-
-process.on('exit', function() {
-  assert.equal(countWildcard, 2);
-  assert.equal(counMultiLevelWildcard, 2);
-  assert.equal(countAny, 2);
+    expect(countWildcard).toBe(2);
+    expect(counMultiLevelWildcard).toBe(2);
+    expect(countAny).toBe(2);
+  });
 });

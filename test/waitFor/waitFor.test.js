@@ -1,153 +1,114 @@
-var simpleEvents = require('nodeunit').testCase;
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
-var assert= require('assert');
+import { describe, it, expect } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-if (typeof require !== 'undefined') {
-    EventEmitter2 = require(file).EventEmitter2;
-} else {
-    EventEmitter2 = window.EventEmitter2;
-}
 
-module.exports = simpleEvents({
-    '1. should return thenable object that resolves when an event occurs': function (test) {
-        var emitter = new EventEmitter2({verbose: true});
+describe('waitFor Tests', () => {
+  it('1. should return thenable object that resolves when an event occurs', async () => {
+    const emitter = new EventEmitter2({verbose: true});
 
-        var thenable = emitter.waitFor('foo');
+    const thenable = emitter.waitFor('foo');
 
-        test.ok(typeof thenable.then === 'function', 'then method missing');
-        test.ok(typeof thenable.cancel === 'function', 'cancel method missing');
+    expect(typeof thenable.then === 'function').toBe(true);
+    expect(typeof thenable.cancel === 'function').toBe(true);
 
-        var timestamp;
+    let timestamp;
+    setTimeout(() => {
+      timestamp = Date.now();
+      emitter.emit('foo', 1, 2);
+    }, 50);
 
-        thenable.then(function (data) {
-            if (Date.now() - timestamp < 0) {
-                throw Error('premature resolving');
-            }
-            test.equal(data.length, 2);
-            test.equal(data[0], 1);
-            test.equal(data[1], 2);
-            test.done();
-        }, function (err) {
-            throw err;
-        });
+    const data = await thenable;
+    expect(Date.now() - timestamp >= 0).toBe(true);
+    expect(data.length).toBe(2);
+    expect(data[0]).toBe(1);
+    expect(data[1]).toBe(2);
+  });
 
-        setTimeout(function () {
-            timestamp = Date.now();
-            emitter.emit('foo', 1, 2);
-        }, 50);
-    },
+  it('2. should reject thenable if timeout', async () => {
+    const emitter = new EventEmitter2({verbose: true});
+    const timestamp = Date.now();
+    const promise = emitter.waitFor('foo', {
+      timeout: 50
+    });
+    await expect(promise).rejects.toThrow('timeout');
+    expect(Date.now() - timestamp >= 0).toBe(true);
+  });
 
-    '2. should reject thenable if timeout': function (test) {
-        var emitter = new EventEmitter2({verbose: true});
-        var timestamp = Date.now();
-        emitter.waitFor('foo', {
-            timeout: 50
-        }).then(function () {
-            throw Error('Unexpected promise resolving');
-        }, function (err) {
-            if (Date.now() - timestamp < 0) {
-                throw Error('premature rejecting');
-            }
-            test.ok(err instanceof Error);
-            test.equal(err.message, 'timeout');
-            test.done();
-        });
-    },
+  it('3. should reject thenable if cancel method was called', async () => {
+    const emitter = new EventEmitter2({verbose: true});
+    let timestamp;
+    const thenable = emitter.waitFor('foo');
 
-    '3. should reject thenable if cancel method was called': function (test) {
-        var emitter = new EventEmitter2({verbose: true});
-        var timestamp;
-        var thenable = emitter.waitFor('foo');
+    setTimeout(() => {
+      timestamp = Date.now();
+      thenable.cancel();
+    }, 50);
 
-        thenable.then(function () {
-            throw Error('Unexpected promise resolving');
-        }, function (err) {
-            if (Date.now() - timestamp < 0) {
-                throw Error('premature rejecting');
-            }
-            test.ok(err instanceof Error);
-            test.equal(err.message, 'canceled');
-            test.done();
-        });
+    await expect(thenable).rejects.toThrow('canceled');
+    expect(Date.now() - timestamp >= 0).toBe(true);
+  });
 
-        setTimeout(function () {
-            timestamp = Date.now();
-            thenable.cancel();
-        }, 50);
-    },
+  it('4. should handle an error when handleError option is used', async () => {
+    const emitter = new EventEmitter2({verbose: true});
 
-    '4. should handle an error when handleError option is used': function (test) {
-        var emitter = new EventEmitter2({verbose: true});
+    const promise = emitter.waitFor('foo', {
+      handleError: true
+    });
 
-        emitter.waitFor('foo', {
-            handleError: true
-        }).then(function (data) {
-            test.equal(data.length, 2);
-            test.equal(data[0], 1);
-            test.equal(data[1], 2);
-            test.done();
-        }, function (err) {
-            throw err;
-        });
+    emitter.emit('foo', null, 1, 2);
+    const data = await promise;
+    expect(data.length).toBe(2);
+    expect(data[0]).toBe(1);
+    expect(data[1]).toBe(2);
+  });
 
-        emitter.emit('foo', null, 1, 2)
-    },
+  it('5. should be able to filter event by data using the filter callback option', async () => {
+    const emitter = new EventEmitter2({verbose: true});
 
-    '5. should able to filter event by data using the filter callback option': function (test) {
-        var emitter = new EventEmitter2({verbose: true});
+    const promise = emitter.waitFor('foo', {
+      filter (arg0) {
+        return arg0 === 2;
+      },
+      timeout: 50
+    });
 
-        emitter.waitFor('foo', {
-            filter: function (arg0) {
-                return arg0 === 2;
-            },
-            timeout: 50
-        }).then(function (data) {
-            test.equal(data[0], 2);
-            test.done();
-        }, function (err) {
-            throw err;
-        });
+    emitter.emit('foo', 1);
+    emitter.emit('foo', 2);
+    const data = await promise;
+    expect(data[0]).toBe(2);
+  });
 
-        emitter.emit('foo', 1);
-        emitter.emit('foo', 2);
-    },
+  it('6. should clean internal listeners once its promise resolved', async () => {
+    const emitter = new EventEmitter2({verbose: true});
 
-    '6. should clean internal listeners once its promise resolved': function (done) {
-        var emitter = new EventEmitter2({verbose: true});
+    const promise = emitter.waitFor('foo', {
+      filter (arg0) {
+        return arg0 === 2;
+      },
+      timeout: 50
+    });
 
-        emitter.waitFor('foo', {
-            filter: function (arg0) {
-                return arg0 === 2;
-            },
-            timeout: 50
-        }).then(function (data) {
-            assert.equal(data[0], 2);
-            assert.equal(emitter.listenerCount(), 0);
-            done();
-        }).catch(done);
+    expect(emitter.listenerCount()).toBe(1);
+    emitter.emit('foo', 2);
+    const data = await promise;
+    expect(data[0]).toBe(2);
+    expect(emitter.listenerCount()).toBe(0);
+  });
 
-        assert.equal(emitter.listenerCount(), 1);
+  it('7. should clean internal listeners once its promise resolved (wildcard)', async () => {
+    const emitter = new EventEmitter2({verbose: true, wildcard: true});
 
-        emitter.emit('foo', 2);
-    },
+    const promise = emitter.waitFor('foo.*', {
+      filter (arg0) {
+        return arg0 === 2;
+      },
+      timeout: 50
+    });
 
-    '7. should clean internal listeners once its promise resolved (wildcard)': function (done) {
-        var emitter = new EventEmitter2({verbose: true, wildcard: true});
-
-        emitter.waitFor('foo.*', {
-            filter: function (arg0) {
-                return arg0 === 2;
-            },
-            timeout: 50
-        }).then(function (data) {
-            assert.equal(data[0], 2);
-            assert.equal(emitter.listenerCount('**'), 0);
-            done();
-        }).catch(done);
-
-        assert.equal(emitter.listenerCount('**'), 1);
-
-        emitter.emit('foo.bar', 2);
-    }
+    expect(emitter.listenerCount('**')).toBe(1);
+    emitter.emit('foo.bar', 2);
+    const data = await promise;
+    expect(data[0]).toBe(2);
+    expect(emitter.listenerCount('**')).toBe(0);
+  });
 });

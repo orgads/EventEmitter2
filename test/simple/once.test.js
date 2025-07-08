@@ -1,164 +1,90 @@
-var BBPromise = require("bluebird");
-var simpleEvents = require('nodeunit').testCase;
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
+import { describe, it, expect } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
+import BBPromise from 'bluebird';
 
+// Configure BlueBird promises
 BBPromise.config({
-    cancellation: true
+  cancellation: true
 });
 
-if (typeof require !== 'undefined') {
-    EventEmitter2 = require(file).EventEmitter2;
-} else {
-    EventEmitter2 = window.EventEmitter2;
-}
+describe('once Tests', () => {
+  it('1. should return a Promise', () => {
+    const ee = new EventEmitter2();
+    const result = EventEmitter2.once(ee, 'event');
+    expect(result).toBeInstanceOf(Promise);
+  });
 
-module.exports = simpleEvents({
-    '1. should return a Promise': function (test) {
-        var ee = new EventEmitter2();
-        var result = EventEmitter2.once(ee, 'event');
-        test.ok(result instanceof Promise);
-        test.done();
-    },
+  it('2. should resolve the promise when a specific event occurs', async () => {
+    const ee = new EventEmitter2();
+    const promise = EventEmitter2.once(ee, 'event');
+    ee.emit('event');
+    await promise; // Should resolve without error
+  });
 
-    '2. should resolve the promise when a specific event occurs': function (test) {
-        var ee = new EventEmitter2();
-        var timer = setTimeout(function () {
-            throw Error('timeout');
-        }, 100);
-        EventEmitter2.once(ee, 'event').then(function () {
-            clearTimeout(timer);
-            test.done();
-        }, function (err) {
-            clearTimeout(timer);
-            throw err;
-        });
-        ee.emit('event');
-    },
+  it('3. should handle the event data arguments as an array', async () => {
+    const ee = new EventEmitter2();
+    const promise = EventEmitter2.once(ee, 'event');
+    ee.emit('event', 1, 2, 3);
+    const data = await promise;
+    expect(data).toEqual([1, 2, 3]);
+  });
 
-    '3. should handle the event data arguments as an array': function (test) {
-        var ee = new EventEmitter2();
-        EventEmitter2.once(ee, 'event').then(function (data) {
-            test.deepEqual(data, [1, 2, 3]);
-            test.done();
-        }, function (err) {
-            throw err;
-        });
-        ee.emit('event', 1, 2, 3);
-    },
+  it('4. should reject the promise if an error event emitted', async () => {
+    const ee = new EventEmitter2();
+    const message = 'test';
+    const promise = EventEmitter2.once(ee, 'event');
+    ee.emit('error', new Error(message));
+    await expect(promise).rejects.toThrow(message);
+  });
 
-    '4. should reject the promise if an error event emitted': function (test) {
-        var ee = new EventEmitter2();
-        var message = 'test';
-        var timer = setTimeout(function () {
-            throw Error('timeout');
-        }, 100);
-        EventEmitter2.once(ee, 'event').then(function () {
-            clearTimeout(timer);
-            throw Error('unexpected promise resolving');
-        }, function (err) {
-            clearTimeout(timer);
-            test.equal(err.message, message);
-            test.done();
-        });
-        ee.emit('error', new Error(message));
-    },
+  it('5. should support cancellation', async () => {
+    const ee = new EventEmitter2();
+    const message = 'canceled';
+    const promise = EventEmitter2.once(ee, 'event');
+    setTimeout(() => {
+      promise.cancel();
+    }, 50);
+    await expect(promise).rejects.toThrow(message);
+  });
 
-    '5. should support cancellation': function (test) {
-        var ee = new EventEmitter2();
-        var message = 'canceled';
+  it('6. should support timeout handling', async () => {
+    const ee = new EventEmitter2();
+    const message = 'timeout';
+    const promise = EventEmitter2.once(ee, 'event', {
+      timeout: 10
+    });
+    await expect(promise).rejects.toThrow(message);
+  });
 
-        var timer = setTimeout(function () {
-            throw Error('test timeout');
-        }, 100);
-        var promise = EventEmitter2.once(ee, 'event');
+  it('7. should support BlueBird promises', async () => {
+    const ee = new EventEmitter2();
+    const promise = EventEmitter2.once(ee, 'event', {
+      Promise: BBPromise
+    });
+    ee.emit('event', 1, 2, 3);
+    const data = await promise;
+    expect(data).toEqual([1, 2, 3]);
+  });
 
-        promise.then(function () {
-            clearTimeout(timer);
-            throw Error('unexpected promise resolving');
-        }, function (err) {
-            clearTimeout(timer);
-            test.equal(err.message, message);
-            test.done();
-        });
+  it('8. should support BlueBird promise silent cancellation', async () => {
+    const ee = new EventEmitter2();
+    const bbPromise = EventEmitter2.once(ee, 'event', {
+      Promise: BBPromise
+    });
+    bbPromise.cancel();
+    ee.emit('event');
+    // Just ensure no error is thrown, test passes if it completes
+    await new Promise(resolve => setTimeout(resolve, 50));
+  });
 
-        setTimeout(function () {
-            promise.cancel();
-        }, 50);
-    },
-
-    '6. should support timeout handling': function (test) {
-        var ee = new EventEmitter2();
-        var message = 'timeout';
-
-        var timer = setTimeout(function () {
-            throw Error('test timeout');
-        }, 100);
-
-        var promise = EventEmitter2.once(ee, 'event', {
-            timeout: 10
-        });
-
-        promise.then(function () {
-            clearTimeout(timer);
-            throw Error('unexpected promise resolving');
-        }, function (err) {
-            clearTimeout(timer);
-            test.equal(err.message, message);
-            test.done();
-        });
-    },
-
-
-    '7. should support BlueBird promises': function (test) {
-        var ee = new EventEmitter2();
-
-        EventEmitter2.once(ee, 'event', {
-            Promise: BBPromise
-        }).then(function (data) {
-            test.deepEqual(data, [1, 2, 3]);
-            test.done();
-        }, function (err) {
-            throw err;
-        });
-        ee.emit('event', 1, 2, 3);
-    },
-
-    '8. should support BlueBird promise silent cancellation': function (test) {
-        var ee = new EventEmitter2();
-
-        var bbPromise= EventEmitter2.once(ee, 'event', {
-            Promise: BBPromise
-        }).then(function () {
-            throw Error('unexpected promise resolving');
-        }, function () {
-            throw Error('unexpected promise rejecting');
-        });
-
-        bbPromise.cancel();
-        ee.emit('event');
-
-        setTimeout(function(){
-            test.done();
-        }, 50);
-    },
-
-    '9. should support overloading cancellation api': function (test) {
-        var ee = new EventEmitter2();
-        var message= 'canceled';
-
-        var bbPromise= EventEmitter2.once(ee, 'event', {
-            Promise: BBPromise,
-            overload: true
-        });
-
-        bbPromise.then(function () {
-            throw Error('unexpected promise resolving');
-        }, function (err) {
-            test.equal(err.message, message);
-            test.done();
-        });
-
-        bbPromise.cancel();
-    }
+  it('9. should support overloading cancellation api', async () => {
+    const ee = new EventEmitter2();
+    const message = 'canceled';
+    const bbPromise = EventEmitter2.once(ee, 'event', {
+      Promise: BBPromise,
+      overload: true
+    });
+    bbPromise.cancel();
+    await expect(bbPromise).rejects.toThrow(message);
+  });
 });

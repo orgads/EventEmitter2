@@ -1,28 +1,18 @@
-var simpleEvents = require('nodeunit').testCase;
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
+import { describe, it, expect } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-if(typeof require !== 'undefined') {
-  EventEmitter2 = require(file).EventEmitter2;
-}
-else {
-  EventEmitter2 = window.EventEmitter2;
-}
 
-module.exports = simpleEvents({
-
-  '1. Test event names function.': function (test) {
-
-    var emitter = new EventEmitter2({ verbose: true });
+describe('eventNames Tests', () => {
+  it('1. Test event names function.', () => {
+    const emitter = new EventEmitter2({ verbose: true });
 
     emitter.on('foo', () => {});
     emitter.on('bar', () => {});
 
-    var eventNames = emitter.eventNames();
+    const eventNames = emitter.eventNames();
     eventNames.sort();
-    test.equal(eventNames.length, 2);
-    test.equal(eventNames[0],'bar');
-    test.equal(eventNames[1],'foo');
-    test.done();
-  }
+    expect(eventNames.length).toBe(2);
+    expect(eventNames[0]).toBe('bar');
+    expect(eventNames[1]).toBe('foo');
+  });
 });

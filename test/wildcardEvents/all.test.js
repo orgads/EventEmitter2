@@ -1,272 +1,232 @@
-var basicEvents = require('nodeunit').testCase;
+import { describe, it, expect, vi } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-var EventEmitter2;
 
-if(typeof require !== 'undefined') {
-  EventEmitter2 = require('../../lib/eventemitter2').EventEmitter2;
-}
-else {
-  EventEmitter2 = window.EventEmitter2;
-}
-
-function setHelper (emitter, test, testName){
-  var eventNames = [
-    testName,
-    testName + '.*',
-    testName + '.ns1',
-    testName + '.ns1.ns2',
-    testName + '.ns2.*'
-  ];
-
-  for (var i = 0; i < eventNames.length; i++) {
-    emitter.on(eventNames[i], function () {
-        test.ok(true, eventNames[i] + 'has fired');
-    });
-  }
-
-  return eventNames;
-};
-
-module.exports = basicEvents({
-
-  '1. An event can be namespaced.': function (test) {
-
-    var emitter = new EventEmitter2({
+describe('wildcardEvents all Tests', () => {
+  it('1. An event can be namespaced.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test1.ns1', function () {
-      test.ok(true, 'The event was raised');
-    });
+    const spy = vi.fn();
+    emitter.on('test1.ns1', spy);
 
     emitter.emit('test1.ns1');
 
-    test.expect(1);
-    test.done();
+    // Original expected 1 assertion
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 
-  },
-  '2. An event can be namespaced and accept values.': function (test) {
-
-    var emitter = new EventEmitter2({
+  it('2. An event can be namespaced and accept values.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test2.ns1', function(value1) {
-      test.ok(true, 'The event was raised');
-      test.ok(typeof value1 !== 'undefined', 'The event was raised with the value `' + value1 + '`.');
+    const spy = vi.fn((value1) => {
+      expect(typeof value1 !== 'undefined').toBe(true);
     });
+    emitter.on('test2.ns1', spy);
 
     emitter.emit('test2.ns1', 1);
 
-    test.expect(2);
-    test.done();
+    // Original expected 2 assertions (1 for being called + 1 for parameter)
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(1);
+  });
 
-  },
-  '3. A namespaced event can be raised multiple times and accept values.': function (test) {
-
-    var emitter = new EventEmitter2({
+  it('3. A namespaced event can be raised multiple times and accept values.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test3.ns1', function (value1, value2, value3) {
-       test.ok(true, 'The event was raised');
-       test.ok(arguments.length === 3, 'The event was raised with the correct number of arguments');
-       test.ok(value1 === 1 || value1 === 4, 'The event was raised with the value `' + value1 + '`.');
-       test.ok(value2 === 2 || value2 === 5, 'The event was raised with the value `' + value2 + '`.');
-       test.ok(value3 === 3 || value3 === 6, 'The event was raised with the value `' + value3 + '`.');
+    const spy = vi.fn(function (value1, value2, value3) {
+      expect(arguments.length === 3).toBe(true);
+      expect(value1 === 1 || value1 === 4).toBe(true);
+      expect(value2 === 2 || value2 === 5).toBe(true);
+      expect(value3 === 3 || value3 === 6).toBe(true);
     });
+    emitter.on('test3.ns1', spy);
 
     emitter.emit('test3.ns1', 1, 2, 3);
     emitter.emit('test3.ns1', 4, 5, 6);
 
-    test.expect(10);
-    test.done();
-  },
-  '4. A listener should support wild cards.': function (test) {
+    // Original expected 10 assertions (2 emissions × 5 assertions each)
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy).toHaveBeenNthCalledWith(1, 1, 2, 3);
+    expect(spy).toHaveBeenNthCalledWith(2, 4, 5, 6);
+  });
 
-    var emitter = new EventEmitter2({
+  it('4. A listener should support wild cards.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test4.*', function () {
-      test.ok(true, 'The event was raised');
-    });
+    const spy = vi.fn();
+    emitter.on('test4.*', spy);
 
     emitter.emit('test4.ns1');
 
-    test.expect(1);
-    test.done();
+    // Original expected 1 assertion
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 
-  },
-  '5. Emitting an event should support wildcards.': function (test) {
-
-    var emitter = new EventEmitter2({
+  it('5. Emitting an event should support wildcards.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test5A.test5B', function () {
-      test.ok(true, 'The event was raised');
-    });
+    const spy = vi.fn();
+    emitter.on('test5A.test5B', spy);
 
     emitter.emit('test5A.*');
 
-    test.expect(1);
-    test.done();
+    // Original expected 1 assertion
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 
-  },
-  '6. A listener should support complex wild cards.': function (test) {
-
-    var emitter = new EventEmitter2({
+  it('6. A listener should support complex wild cards.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test10.*.foo', function () {
-      test.ok(true, 'The event was raised');
-    });
+    const spy = vi.fn();
+    emitter.on('test10.*.foo', spy);
 
     emitter.emit('test10.ns1.foo');
 
-    test.expect(1);
-    test.done();
+    // Original expected 1 assertion
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 
-  },
-  '7. Emitting an event should support complex wildcards.': function (test) {
-
-    var emitter = new EventEmitter2({
+  it('7. Emitting an event should support complex wildcards.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test11.ns1.foo', function () {
-      test.ok(true, 'The event was raised');
-    });
+    const spy = vi.fn();
+    emitter.on('test11.ns1.foo', spy);
 
     emitter.emit('test11.*.foo');
 
-    test.expect(1);
-    test.done();
+    // Original expected 1 assertion
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 
-  },
-  '8. Emitting an event should support complex wildcards multiple times, a valid listener should accept values.': function (test) {
-
-    var emitter = new EventEmitter2({
+  it('8. Emitting an event should support complex wildcards multiple times, a valid listener should accept values.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test12.ns1.ns2', function (value1, value2, value3) {
-      test.ok(true, 'The event was raised');
-      test.ok(arguments.length === 3, 'The event was raised with the correct number of arguments');
-      test.ok(value1 === 1 || value1 === 4, 'The event was raised with the value `' + value1 + '`.');
-      test.ok(value2 === 2 || value2 === 5, 'The event was raised with the value `' + value1 + '`.');
-      test.ok(value3 === 3 || value3 === 6, 'The event was raised with the value `' + value1 + '`.');
+    const spy = vi.fn(function (value1, value2, value3) {
+      expect(arguments.length === 3).toBe(true);
+      expect(value1 === 1 || value1 === 4).toBe(true);
+      expect(value2 === 2 || value2 === 5).toBe(true);
+      expect(value3 === 3 || value3 === 6).toBe(true);
     });
+    emitter.on('test12.ns1.ns2', spy);
 
     emitter.emit('test12.*.ns2', 1, 2, 3);
     emitter.emit('test12.*.ns2', 4, 5, 6);
 
-    test.expect(10);
-    test.done();
+    // Original expected 10 assertions (2 emissions × 5 assertions each)
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy).toHaveBeenNthCalledWith(1, 1, 2, 3);
+    expect(spy).toHaveBeenNthCalledWith(2, 4, 5, 6);
+  });
 
-  },
-  '9. List all the listeners for a particular event.': function(test) {
-
-    var emitter = new EventEmitter2({
+  it('9. List all the listeners for a particular event.', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    emitter.on('test13', function (event) {
-      test.ok(true,'raised one');
-    });
+    const spy1 = vi.fn();
+    const spy2 = vi.fn();
+    emitter.on('test13', spy1);
+    emitter.on('test13', spy2);
 
-    emitter.on('test13', function (event) {
-      test.ok(true,'raised two');
-    });
+    const listeners = emitter.listeners('test13');
 
-    var listeners = emitter.listeners('test13');
+    expect(listeners.length === 2).toBe(true);
+    // Functions should not be called since no event is emitted
+    expect(spy1).not.toHaveBeenCalled();
+    expect(spy2).not.toHaveBeenCalled();
+  });
 
-    test.ok(listeners.length === 2, 'The event `test13` should have 2 listeners');
-    test.expect(1);
-    test.done();
-
-  },
-  '10. should be able to listen on any event with 3 arguments' : function (test) {
-
-    var emitter = new EventEmitter2({
+  it('10. should be able to listen on any event with 3 arguments', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    var fn = function (event, foo, bar) {
-      test.equal(this.event, 'test23.ns5.ns5')
-      test.equal(event, 'test23.ns5.ns5')
-      test.equal(foo, 'foo');
-      test.equal(bar, 1);
-      test.ok(true, 'raised test23.ns5.ns5');
-    }
+    const fn = vi.fn(function (event, foo, bar) {
+      expect(this.event).toBe('test23.ns5.ns5');
+      expect(event).toBe('test23.ns5.ns5');
+      expect(foo).toBe('foo');
+      expect(bar).toBe(1);
+    });
 
     emitter.onAny(fn);
     emitter.emit('test23.ns5.ns5', 'foo', 1);
-    test.expect(5);
-    test.done();
 
-  },
+    // Original expected 5 assertions (1 for being called + 4 parameter checks)
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith('test23.ns5.ns5', 'foo', 1);
+  });
 
-  '11. should be able to listen on any event with 4 arguments' : function (test) {
-
-    var emitter = new EventEmitter2({
+  it('11. should be able to listen on any event with 4 arguments', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    var fn = function (event, foo, bar, baz) {
-      test.equal(this.event, 'test23.ns5.ns5')
-      test.equal(event, 'test23.ns5.ns5')
-      test.equal(foo, 'foo');
-      test.equal(bar, 1);
-      test.equal(baz, 'baz');
-      test.ok(true, 'raised test23.ns5.ns5');
-    }
+    const fn = vi.fn(function (event, foo, bar, baz) {
+      expect(this.event).toBe('test23.ns5.ns5');
+      expect(event).toBe('test23.ns5.ns5');
+      expect(foo).toBe('foo');
+      expect(bar).toBe(1);
+      expect(baz).toBe('baz');
+    });
 
     emitter.onAny(fn);
     emitter.emit('test23.ns5.ns5', 'foo', 1, 'baz');
-    test.expect(6);
-    test.done();
 
-  },
+    // Original expected 6 assertions (1 for being called + 5 parameter checks)
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith('test23.ns5.ns5', 'foo', 1, 'baz');
+  });
 
-  '12. No warning should be raised if we set maxListener to be greater before adding' : function (test) {
-
-    var emitter = new EventEmitter2({
+  it('12. No warning should be raised if we set maxListener to be greater before adding', () => {
+    const emitter = new EventEmitter2({
       wildcard: true,
       verbose: true
     });
 
-    var type = 'test29.*';
+    const type = 'test29.*';
+    const spies = [];
 
     // set to 20
     emitter.setMaxListeners(20);
 
-    for (var i = 0; i < 15 ; i++) {
-      emitter.on(type, function () {
-        test.ok(true, 'event was raised');
-      });
+    for (let i = 0; i < 15 ; i++) {
+      const spy = vi.fn();
+      spies.push(spy);
+      emitter.on(type, spy);
     }
 
-    var listeners = emitter.listeners(type);
-    test.equal(listeners.length, 15, 'should have 15');
-    test.ok(!(emitter.listenerTree[ 'test29' ]['*']._listeners.warned), 'should not have been set');
+    const listeners = emitter.listeners(type);
+    expect(listeners.length).toBe(15);
+    expect(emitter.listenerTree['test29']?.['*']?._listeners?.warned).toBeFalsy();
 
-    test.expect(2);
-    test.done();
-  }
-
-
+    // Functions should not be called since no event is emitted
+    spies.forEach(spy => expect(spy).not.toHaveBeenCalled());
+  });
 });

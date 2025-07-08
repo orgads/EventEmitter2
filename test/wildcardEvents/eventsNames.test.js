@@ -1,53 +1,47 @@
-var assert = require('assert');
-var file = '../../lib/eventemitter2';
-var EventEmitter2;
+import { describe, it, expect } from 'vitest';
+import EventEmitter2 from '../../lib/eventemitter2.js';
 
-if (typeof require !== 'undefined') {
-    EventEmitter2 = require(file).EventEmitter2;
-} else {
-    EventEmitter2 = window.EventEmitter2;
-}
 
-module.exports = {
-    '1. should return wildcard events namespaces': function () {
-        var symbol= Symbol('test');
+describe('eventsNames Tests', () => {
+  it('1. should return wildcard events namespaces', () => {
+    const symbol = Symbol('test');
 
-        var ee= new EventEmitter2({
-            wildcard: true
-        });
+    const ee = new EventEmitter2({
+      wildcard: true
+    });
 
-        var listener;
+    let listener;
 
-        ee.on('a.b.c', function(){});
-        ee.on('a.b.d', listener= function(){});
-        ee.on('z.*', function(){});
-        ee.on(['a', 'b', symbol], function(){});
+    ee.on('a.b.c', () => {});
+    ee.on('a.b.d', listener = function() {});
+    ee.on('z.*', () => {});
+    ee.on(['a', 'b', symbol], () => {});
 
-        assert.deepEqual(ee.eventNames(), [ 'z.*', [ 'a', 'b', symbol ], 'a.b.d', 'a.b.c' ]);
+    expect(ee.eventNames()).toEqual([ 'z.*', [ 'a', 'b', symbol ], 'a.b.d', 'a.b.c' ]);
 
-        ee.off('a.b.d', listener);
+    ee.off('a.b.d', listener);
 
-        assert.deepEqual(ee.eventNames(), [ 'z.*', [ 'a', 'b', symbol ], 'a.b.c' ]);
-    },
+    expect(ee.eventNames()).toEqual([ 'z.*', [ 'a', 'b', symbol ], 'a.b.c' ]);
+  });
 
-    '2. should return wildcard events namespaces as array if asArray option was set': function () {
-        var symbol= Symbol('test');
+  it('2. should return wildcard events namespaces as array if asArray option was set', () => {
+    const symbol = Symbol('test');
 
-        var ee= new EventEmitter2({
-            wildcard: true
-        });
+    const ee = new EventEmitter2({
+      wildcard: true
+    });
 
-        var listener;
+    let listener;
 
-        ee.on('a.b.c', function(){});
-        ee.on('a.b.d', listener= function(){});
-        ee.on('z.*', function(){});
-        ee.on(['a', 'b', symbol], function(){});
+    ee.on('a.b.c', () => {});
+    ee.on('a.b.d', listener = function() {});
+    ee.on('z.*', () => {});
+    ee.on(['a', 'b', symbol], () => {});
 
-        assert.deepEqual(ee.eventNames(true), [ ['z','*'], [ 'a', 'b', symbol ], ['a','b','d'], ['a','b','c']]);
+    expect(ee.eventNames(true)).toEqual([ ['z', '*'], [ 'a', 'b', symbol ], ['a', 'b', 'd'], ['a', 'b', 'c'] ]);
 
-        ee.off('a.b.d', listener);
+    ee.off('a.b.d', listener);
 
-        assert.deepEqual(ee.eventNames(true), [ ['z','*'], [ 'a', 'b', symbol ], ['a','b','c']]);
-    }
-};
+    expect(ee.eventNames(true)).toEqual([ ['z', '*'], [ 'a', 'b', symbol ], ['a', 'b', 'c'] ]);
+  });
+});
